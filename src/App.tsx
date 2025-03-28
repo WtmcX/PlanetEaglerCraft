@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Upload, Package, Code, Gamepad2, TrendingUp, Star, Download } from 'lucide-react';
+import { Search, Upload, Package, Code, Gamepad2, TrendingUp, Star, Download, Moon, Sun } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { Login } from './components/Login';
 import { AdminPanel } from './components/AdminPanel';
+import { BrowserRouter as Router } from 'react-router-dom';
 
 interface Comment {
   id: string;
@@ -40,6 +41,11 @@ function App() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentAuthor, setCommentAuthor] = useState('');
   const [commentText, setCommentText] = useState('');
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    // Check localStorage for saved theme, default to 'light'
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark';
+    return savedTheme === 'dark' ? 'dark' : 'light';
+  });
 
   useEffect(() => {
     checkAdmin();
@@ -66,6 +72,24 @@ function App() {
       setFilteredContent(filtered);
     }
   }, [activeCategory, featuredContent]);
+
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
+
+  // Initialize theme on first load
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+  }, []);
+
+  const applyTheme = (themeName: 'light' | 'dark') => {
+    if (themeName === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
 
   const checkAdmin = async () => {
     try {
@@ -353,6 +377,13 @@ function App() {
     fetchComments(content.id);
   };
 
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    document.documentElement.classList.toggle('dark', newTheme === 'dark');
+  };
+
   if (!isAdmin && showAdminPanel) {
     return <Login onLogin={handleLogin} />;
   }
@@ -364,12 +395,21 @@ function App() {
           <h1 className="text-xl font-bold cursor-pointer" onClick={() => setShowAdminPanel(false)}>
             CraftHub Admin
           </h1>
-          <button
-            onClick={handleLogout}
-            className="text-white hover:text-indigo-200 transition-colors"
-          >
-            Logout
-          </button>
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+              aria-label="Toggle theme"
+            >
+              {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+            </button>
+            <button
+              onClick={handleLogout}
+              className="text-white hover:text-indigo-200 transition-colors"
+            >
+              Logout
+            </button>
+          </div>
         </div>
         <AdminPanel />
       </div>
@@ -378,29 +418,38 @@ function App() {
 
   if (selectedContent) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <header className="bg-indigo-600 text-white">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <header className="bg-indigo-600 dark:bg-indigo-800 text-white">
           <div className="container mx-auto px-4 py-6">
             <div className="flex items-center justify-between">
               <h1 className="text-2xl font-bold cursor-pointer" onClick={() => setSelectedContent(null)}>CraftHub</h1>
-              {isAdmin && (
+              <div className="flex items-center space-x-4">
                 <button
-                  onClick={() => setShowAdminPanel(true)}
-                  className="text-white hover:text-indigo-200 transition-colors"
+                  onClick={toggleTheme}
+                  className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                  aria-label="Toggle theme"
                 >
-                  Admin Panel
+                  {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
                 </button>
-              )}
+                {isAdmin && (
+                  <button
+                    onClick={() => setShowAdminPanel(true)}
+                    className="text-white hover:text-indigo-200 transition-colors"
+                  >
+                    Admin Panel
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </header>
 
         <main className="container mx-auto px-4 py-8">
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden max-w-4xl mx-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden max-w-4xl mx-auto">
             <img src={selectedContent.image} alt={selectedContent.title} className="w-full h-64 object-cover" />
             <div className="p-8">
               <div className="flex items-center justify-between mb-4">
-                <h1 className="text-3xl font-bold">{selectedContent.title}</h1>
+                <h1 className="text-3xl font-bold dark:text-white">{selectedContent.title}</h1>
                 <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">
                   {selectedContent.type}
                 </span>
@@ -408,30 +457,33 @@ function App() {
 
               <div className="grid grid-cols-2 gap-6 mb-8">
                 <div>
-                  <p className="text-gray-600 mb-4">{selectedContent.description}</p>
-                  <p className="text-gray-700">by <span className="font-semibold">{selectedContent.author}</span></p>
+                  <p className="text-gray-600 dark:text-gray-300 mb-4">{selectedContent.description}</p>
+                  <p className="text-gray-700 dark:text-gray-300">by <span className="font-semibold">{selectedContent.author}</span></p>
                 </div>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Version:</span>
+                    <span className="text-gray-600 dark:text-gray-300">Version:</span>
                     <span className="font-medium">{selectedContent.version}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">File Size:</span>
+                    <span className="text-gray-600 dark:text-gray-300">File Size:</span>
                     <span className="font-medium">{selectedContent.file_size}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Last Updated:</span>
+                    <span className="text-gray-600 dark:text-gray-300">Last Updated:</span>
                     <span className="font-medium">
                       {new Date(selectedContent.updated_at || '').toLocaleDateString()}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Downloads:</span>
-                    <span className="font-medium">{selectedContent.downloads.toLocaleString()}</span>
+                    <span className="text-gray-600 dark:text-gray-300">Downloads:</span>
+                    <div className="flex items-center text-gray-500 dark:text-gray-400">
+                      <Download className="h-4 w-4 mr-1" />
+                      <span className="text-sm">{selectedContent.downloads.toLocaleString()}</span>
+                    </div>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Rating:</span>
+                    <span className="text-gray-600 dark:text-gray-300">Rating:</span>
                     <div className="flex items-center">
                       <Star className="h-5 w-5 text-yellow-400 mr-1" />
                       <span className="font-medium">{selectedContent.rating}/5.0</span>
@@ -480,28 +532,28 @@ function App() {
                 <h3 className="text-lg font-semibold mb-4">Comments</h3>
                 
                 {/* Comment Form */}
-                <div className="bg-gray-50 p-4 rounded-lg mb-6">
+                <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg mb-6">
                   <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Your Name
                     </label>
                     <input
                       type="text"
                       value={commentAuthor}
                       onChange={(e) => setCommentAuthor(e.target.value)}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                      className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                       placeholder="Enter your name"
                       required
                     />
                   </div>
                   <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Your Comment
                     </label>
                     <textarea
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                      className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                       rows={3}
                       placeholder="What do you think about this content?"
                       required
@@ -539,7 +591,7 @@ function App() {
                             )}
                           </div>
                         </div>
-                        <p className="text-gray-600">{comment.text}</p>
+                        <p className="text-gray-600 dark:text-gray-300">{comment.text}</p>
                       </div>
                     ))
                   )}
@@ -553,157 +605,166 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-indigo-600 text-white">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">CraftHub</h1>
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search content..."
-                  className="pl-10 pr-4 py-2 rounded-lg bg-indigo-700 text-white placeholder-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                />
-                <Search className="absolute left-3 top-2.5 h-5 w-5 text-indigo-300" />
+    <Router basename={import.meta.env.BASE_URL}>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <header className="bg-indigo-600 dark:bg-indigo-800 text-white">
+          <div className="container mx-auto px-4 py-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold">CraftHub</h1>
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={toggleTheme}
+                  className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                  aria-label="Toggle theme"
+                >
+                  {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+                </button>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search content..."
+                    className="pl-10 pr-4 py-2 rounded-lg bg-indigo-700 dark:bg-indigo-900 text-white placeholder-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  />
+                  <Search className="absolute left-3 top-2.5 h-5 w-5 text-indigo-300" />
+                </div>
+                {isAdmin ? (
+                  <button
+                    onClick={() => setShowAdminPanel(true)}
+                    className="flex items-center bg-indigo-500 hover:bg-indigo-400 px-4 py-2 rounded-lg transition-colors"
+                  >
+                    <Upload className="h-5 w-5 mr-2" />
+                    Admin Panel
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setShowAdminPanel(true)}
+                    className="flex items-center bg-indigo-500 hover:bg-indigo-400 px-4 py-2 rounded-lg transition-colors"
+                  >
+                    <Upload className="h-5 w-5 mr-2" />
+                    Upload
+                  </button>
+                )}
               </div>
-              {isAdmin ? (
-                <button
-                  onClick={() => setShowAdminPanel(true)}
-                  className="flex items-center bg-indigo-500 hover:bg-indigo-400 px-4 py-2 rounded-lg transition-colors"
-                >
-                  <Upload className="h-5 w-5 mr-2" />
-                  Admin Panel
-                </button>
-              ) : (
-                <button
-                  onClick={() => setShowAdminPanel(true)}
-                  className="flex items-center bg-indigo-500 hover:bg-indigo-400 px-4 py-2 rounded-lg transition-colors"
-                >
-                  <Upload className="h-5 w-5 mr-2" />
-                  Upload
-                </button>
-              )}
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <main className="container mx-auto px-4 py-8">
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-            {error}
+        <main className="container mx-auto px-4 py-8">
+          {error && (
+            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg mb-6">
+              {error}
+            </div>
+          )}
+
+          <div className="flex space-x-4 mb-8">
+            {[
+              { id: 'all', name: 'All', icon: TrendingUp },
+              { id: 'resource-packs', name: 'Resource Packs', icon: Package },
+              { id: 'mods', name: 'Mods', icon: Code },
+              { id: 'clients', name: 'Clients', icon: Gamepad2 }
+            ].map(category => {
+              const Icon = category.icon;
+              return (
+                <button
+                  key={category.id}
+                  onClick={() => setActiveCategory(category.id)}
+                  className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
+                    activeCategory === category.id
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <Icon className="h-5 w-5 mr-2" />
+                  {category.name}
+                </button>
+              );
+            })}
           </div>
-        )}
 
-        <div className="flex space-x-4 mb-8">
-          {[
-            { id: 'all', name: 'All', icon: TrendingUp },
-            { id: 'resource-packs', name: 'Resource Packs', icon: Package },
-            { id: 'mods', name: 'Mods', icon: Code },
-            { id: 'clients', name: 'Clients', icon: Gamepad2 }
-          ].map(category => {
-            const Icon = category.icon;
-            return (
-              <button
-                key={category.id}
-                onClick={() => setActiveCategory(category.id)}
-                className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
-                  activeCategory === category.id
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                <Icon className="h-5 w-5 mr-2" />
-                {category.name}
-              </button>
-            );
-          })}
-        </div>
-
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold mb-6">Featured Content</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredContent.map(content => (
-              <div key={content.id} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                <img src={content.image} alt={content.title} className="w-full h-48 object-cover" />
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-indigo-600">{content.type}</span>
-                    <div className="flex items-center">
-                      <Star className="h-4 w-4 text-yellow-400 mr-1" />
-                      <span className="text-sm text-gray-600">{content.rating}</span>
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold mb-6">Featured Content</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredContent.map(content => (
+                <div key={content.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                  <img src={content.image} alt={content.title} className="w-full h-48 object-cover" />
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">{content.type}</span>
+                      <div className="flex items-center">
+                        <Star className="h-4 w-4 text-yellow-400 mr-1" />
+                        <span className="text-sm text-gray-600 dark:text-gray-400">{content.rating}</span>
+                      </div>
                     </div>
-                  </div>
-                  <h3 
-                    className="text-xl font-semibold mb-2 cursor-pointer" 
-                    onClick={() => handleSelectContent(content)}
-                  >
-                    {content.title}
-                  </h3>
-                  <p className="text-gray-600 mb-4">by {content.author}</p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center text-gray-500">
-                      <Download className="h-4 w-4 mr-1" />
-                      <span className="text-sm">{content.downloads.toLocaleString()}</span>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button 
-                        onClick={() => handleSelectContent(content)}
-                        className="text-indigo-600 px-3 py-1.5 rounded-lg border border-indigo-600 text-sm transition-colors hover:bg-indigo-50"
-                      >
-                        Details
-                      </button>
-                      <button 
-                        onClick={(e) => {
-                          e.preventDefault(); // Prevent any navigation
-                          e.stopPropagation(); // Stop event bubbling
-                          handleDownload(content);
-                          return false; // Extra safety to prevent navigation
-                        }}
-                        className={`bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                          !content.file_url ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-500'
-                        }`}
-                        disabled={!content.file_url}
-                      >
-                        Download
-                      </button>
+                    <h3 
+                      className="text-xl font-semibold mb-2 cursor-pointer dark:text-white" 
+                      onClick={() => handleSelectContent(content)}
+                    >
+                      {content.title}
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-4">by {content.author}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center text-gray-500 dark:text-gray-400">
+                        <Download className="h-4 w-4 mr-1" />
+                        <span className="text-sm">{content.downloads.toLocaleString()}</span>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button 
+                          onClick={() => handleSelectContent(content)}
+                          className="text-indigo-600 dark:text-indigo-400 px-3 py-1.5 rounded-lg border border-indigo-600 dark:border-indigo-400 text-sm transition-colors hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
+                        >
+                          Details
+                        </button>
+                        <button 
+                          onClick={(e) => {
+                            e.preventDefault(); // Prevent any navigation
+                            e.stopPropagation(); // Stop event bubbling
+                            handleDownload(content);
+                            return false; // Extra safety to prevent navigation
+                          }}
+                          className={`bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                            !content.file_url ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-500'
+                          }`}
+                          disabled={!content.file_url}
+                        >
+                          Download
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      </main>
+              ))}
+            </div>
+          </section>
+        </main>
 
-      <footer className="bg-gray-800 text-white py-8">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div>
-              <h3 className="text-xl font-bold mb-4">CraftHub</h3>
-              <p className="text-gray-400">Your one-stop platform for Minecraft content</p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Quick Links</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Community</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Discord</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Twitter</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Reddit</a></li>
-              </ul>
+        <footer className="bg-gray-800 dark:bg-gray-900 text-white py-8">
+          <div className="container mx-auto px-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div>
+                <h3 className="text-xl font-bold mb-4">CraftHub</h3>
+                <p className="text-gray-400">Your one-stop platform for Minecraft content</p>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-4">Quick Links</h4>
+                <ul className="space-y-2 text-gray-400">
+                  <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
+                  <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
+                  <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-4">Community</h4>
+                <ul className="space-y-2 text-gray-400">
+                  <li><a href="#" className="hover:text-white transition-colors">Discord</a></li>
+                  <li><a href="#" className="hover:text-white transition-colors">Twitter</a></li>
+                  <li><a href="#" className="hover:text-white transition-colors">Reddit</a></li>
+                </ul>
+              </div>
             </div>
           </div>
-        </div>
-      </footer>
-    </div>
+        </footer>
+      </div>
+    </Router>
   );
 }
 
